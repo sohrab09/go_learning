@@ -44,6 +44,65 @@ func getAllProducts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func createProduct(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Methods", "POST")
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(201)
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Plz give me POST request", 400)
+		return
+	}
+
+	var newProduct Products
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&newProduct)
+
+	if err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		http.Error(w, "Please give me valid JSON", 400)
+		return
+	}
+
+	// validation
+	if newProduct.Name == "" {
+		http.Error(w, "Please provide product name", 400)
+		return
+	} else if newProduct.Description == "" {
+		http.Error(w, "Please provide product description", 400)
+		return
+	} else if newProduct.Price == 0 {
+		http.Error(w, "Please provide product price", 400)
+		return
+	} else if newProduct.ImgUrl == "" {
+		http.Error(w, "Please provide product image URL", 400)
+		return
+	} else {
+		fmt.Println("Product created successfully")
+	}
+
+	newProduct.ID = len(productList) + 1
+	productList = append(productList, newProduct)
+
+	encoder := json.NewEncoder(w)
+	// encoder.Encode(newProduct)
+
+	response := map[string]interface{}{
+		"status":  http.StatusOK,
+		"message": "Product created successfully",
+		"data":    newProduct,
+	}
+
+	encoder.Encode(response)
+
+}
+
 func main() {
 	mux := http.NewServeMux() // in here "mux" is a router
 
@@ -51,6 +110,7 @@ func main() {
 
 	mux.HandleFunc("/about", aboutHandler)
 	mux.HandleFunc("/products", getAllProducts)
+	mux.HandleFunc("/create-product", createProduct)
 
 	fmt.Println("Server is running on port 8080")
 
