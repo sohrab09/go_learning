@@ -6,6 +6,27 @@ import (
 	"net/http"
 )
 
+// Product represents a product object
+type Product struct {
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+	ImgURL      string  `json:"imgUrl"`
+}
+
+// In-memory product store
+var productList []Product
+
+// Reusable function to set common headers
+func setJSONHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+}
+
+// Handlers
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello, World!")
 }
@@ -14,132 +35,85 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "This is the about page.")
 }
 
-type Products struct {
-	ID          int     `json:"id"`
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Price       float64 `json:"price"`
-	ImgUrl      string  `json:"imgUrl"`
-}
-
-var productList []Products
-
-func getAllProducts(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Type", "application/json")
+func getAllProductsHandler(w http.ResponseWriter, r *http.Request) {
+	setJSONHeaders(w)
 
 	if r.Method != http.MethodGet {
-		http.Error(w, "Plz give me GET request", http.StatusBadRequest)
+		http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 
 	response := map[string]interface{}{
 		"status":  http.StatusOK,
 		"message": "Product list fetched successfully",
 		"data":    productList,
 	}
-
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 
-func createProduct(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Methods", "POST")
+func createProductHandler(w http.ResponseWriter, r *http.Request) {
+	setJSONHeaders(w)
 
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(201)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	if r.Method != "POST" {
-		http.Error(w, "Plz give me POST request", 400)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var newProduct Products
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&newProduct)
-
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		http.Error(w, "Please give me valid JSON", 400)
+	var newProduct Product
+	if err := json.NewDecoder(r.Body).Decode(&newProduct); err != nil {
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
 	}
 
-	// validation
-	if newProduct.Name == "" {
-		http.Error(w, "Please provide product name", 400)
+	// Validation
+	if newProduct.Name == "" || newProduct.Description == "" || newProduct.Price <= 0 || newProduct.ImgURL == "" {
+		http.Error(w, "All fields (name, description, price, imgUrl) are required and must be valid", http.StatusBadRequest)
 		return
-	} else if newProduct.Description == "" {
-		http.Error(w, "Please provide product description", 400)
-		return
-	} else if newProduct.Price == 0 {
-		http.Error(w, "Please provide product price", 400)
-		return
-	} else if newProduct.ImgUrl == "" {
-		http.Error(w, "Please provide product image URL", 400)
-		return
-	} else {
-		fmt.Println("Product created successfully")
 	}
 
 	newProduct.ID = len(productList) + 1
 	productList = append(productList, newProduct)
 
-	encoder := json.NewEncoder(w)
-	// encoder.Encode(newProduct)
-
 	response := map[string]interface{}{
-		"status":  http.StatusOK,
+		"status":  http.StatusCreated,
 		"message": "Product created successfully",
 		"data":    newProduct,
 	}
-
-	encoder.Encode(response)
-
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
 }
 
 func main() {
-	mux := http.NewServeMux() // in here "mux" is a router
-
-	mux.HandleFunc("/hello", helloHandler) // in here "hello" is a pattern or route and "helloHandler" is a handler function that processes requests to that route or process something
-
-	mux.HandleFunc("/about", aboutHandler)
-	mux.HandleFunc("/products", getAllProducts)
-	mux.HandleFunc("/create-product", createProduct)
-
-	fmt.Println("Server is running on port 8080")
-
-	http.ListenAndServe(":8080", mux)
-
-	err := http.ListenAndServe(":8080", mux) // failed to start server
-
-	if err != nil {
-		fmt.Println("Error starting server:", err)
-		return
-	}
-}
-
-func init() {
-	prd1 := Products{
+	// Initial seed data
+	productList = append(productList, Product{
 		ID:          1,
 		Name:        "Product 1",
 		Description: "Description of product 1",
 		Price:       10.99,
-		ImgUrl:      "https://example.com/product1.jpg",
-	}
-
-	prd2 := Products{
+		ImgURL:      "https://example.com/product1.jpg",
+	}, Product{
 		ID:          2,
 		Name:        "Product 2",
 		Description: "Description of product 2",
 		Price:       19.99,
-		ImgUrl:      "https://example.com/product2.jpg",
-	}
+		ImgURL:      "https://example.com/product2.jpg",
+	})
 
-	productList = append(productList, prd1, prd2)
+	// Route setup
+	mux := http.NewServeMux()
+	mux.HandleFunc("/hello", helloHandler)
+	mux.HandleFunc("/about", aboutHandler)
+	mux.HandleFunc("/products", getAllProductsHandler)
+	mux.HandleFunc("/create-product", createProductHandler)
+
+	fmt.Println("🚀 Server is running on http://localhost:8080")
+	if err := http.ListenAndServe(":8080", mux); err != nil {
+		fmt.Println("❌ Error starting server:", err)
+	}
 }
