@@ -12,7 +12,7 @@ func Serve() {
 	globalRouter := global_router.GlobalRouter(mux)
 
 	mux.Handle("GET /products", http.HandlerFunc(handlers.GetProducts))
-	mux.Handle("POST /create-product", http.HandlerFunc(handlers.CreateProduct))
+	mux.Handle("POST /products", http.HandlerFunc(handlers.CreateProduct))
 
 	fmt.Println("🚀 Server is running on http://localhost:8080")
 	if err := http.ListenAndServe(":8080", globalRouter); err != nil {
