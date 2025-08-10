@@ -23,7 +23,7 @@ func setJSONHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
 }
 
 // Handlers
@@ -37,11 +37,15 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 
 func getAllProductsHandler(w http.ResponseWriter, r *http.Request) {
 	setJSONHeaders(w)
+	/*
+		// No need to check if the request method is GET or Not in new version of route.
 
-	if r.Method != http.MethodGet {
-		http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
-		return
-	}
+		if r.Method != http.MethodGet {
+			http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+	*/
 
 	response := map[string]interface{}{
 		"status":  http.StatusOK,
@@ -106,14 +110,31 @@ func main() {
 	})
 
 	// Route setup
+
+	// ?? Old Route setup
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/hello", helloHandler)
-	mux.HandleFunc("/about", aboutHandler)
-	mux.HandleFunc("/products", getAllProductsHandler)
-	mux.HandleFunc("/create-product", createProductHandler)
+	// mux.HandleFunc("/hello", helloHandler)
+	// mux.HandleFunc("/about", aboutHandler)
+	// mux.HandleFunc("/products", getAllProductsHandler)
+	// mux.HandleFunc("/create-product", createProductHandler)
+
+	// !! New Route Setup
+
+	mux.Handle("GET /hello", http.HandlerFunc(helloHandler))
+	mux.Handle("GET /about", http.HandlerFunc(aboutHandler))
+	mux.Handle("GET /products", http.HandlerFunc(getAllProductsHandler))
+	mux.Handle("POST /create-product", http.HandlerFunc(createProductHandler))
 
 	fmt.Println("🚀 Server is running on http://localhost:8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		fmt.Println("❌ Error starting server:", err)
 	}
 }
+
+/*
+	!! -> Name of some famous golang framework
+		1. Gin
+		2. Chi
+		3. Gorilla Mux
+*/
