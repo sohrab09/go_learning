@@ -1,16 +1,17 @@
-package main
+package handlers
 
 import (
+	"ecommerce/database"
 	"encoding/json"
 	"net/http"
 )
 
-func getProducts(w http.ResponseWriter, r *http.Request) {
+func GetProducts(w http.ResponseWriter, r *http.Request) {
 
 	response := map[string]any{
 		"status":  http.StatusOK,
 		"message": "Product list fetched successfully",
-		"data":    productList,
+		"data":    database.ProductList,
 	}
 	json.NewEncoder(w).Encode(response)
 }

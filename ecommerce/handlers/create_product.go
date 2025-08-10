@@ -1,14 +1,15 @@
-package main
+package handlers
 
 import (
+	"ecommerce/database" // this is the way to import the specific package from different folder
 	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
-func createProduct(w http.ResponseWriter, r *http.Request) {
+func CreateProduct(w http.ResponseWriter, r *http.Request) {
 
-	var newProduct Product
+	var newProduct database.Product
 	if err := json.NewDecoder(r.Body).Decode(&newProduct); err != nil {
 		fmt.Println(err)
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
@@ -21,8 +22,8 @@ func createProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newProduct.ID = len(productList) + 1
-	productList = append(productList, newProduct)
+	newProduct.ID = len(database.ProductList) + 1
+	database.ProductList = append(database.ProductList, newProduct)
 
 	response := map[string]any{
 		"status":  201,
